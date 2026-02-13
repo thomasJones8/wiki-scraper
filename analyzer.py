@@ -18,7 +18,7 @@ class DataAnalyzer:
 
     # biore tylko to co unikalne dla tego artykulu
     # TODO: PAMIETAJ ZE TO DOSTAJE INPUT NIE Z GET CONTENT TYLKO Z GET CLEANED TEXT
-    def get_word_counts(self, cleaned_text):
+    def update_word_counts(self, cleaned_text):
         current = Counter(cleaned_text.split())
         path = self.word_counts_path
 
@@ -37,7 +37,7 @@ class DataAnalyzer:
 
 
 
-    def analyze_relative_word_frequency(self, mode, n, chart, img_path):
+    def analyze_relative_word_frequency(self, mode, n):
         lang = self.lang
         word_counts = self.word_counts_path
         # get wiki data
@@ -98,9 +98,7 @@ class DataAnalyzer:
             "lang_freq": "frequency in wiki language"
         })
         # normalise
-        # visualization
-        if chart:
-            DataAnalyzer.generate_chart(df, img_path)
+
 
         return df
     # TODO: co dokladnie mam zrobic z chart?

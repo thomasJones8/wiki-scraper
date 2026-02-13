@@ -30,17 +30,18 @@ class Scraper:
     #nazwa_folderu/
 
     #TODO: dodaj domyslne argumenty
-    def __init__(self, mode="online", source="https://minecraft.wiki/"):
+    def __init__(self, phrase, mode="online", source="https://minecraft.wiki/"):
         if mode not in ['online', 'offline']:
             raise ValueError('Invalid mode. Options: online, offline')
         self.mode = mode
         self.source = source
+        self.phrase = phrase
 
     # returns the important part of the source code (html) of the article
     # type tag (beautifulsoup)
-    def get_content_soup(self, phrase):
+    def get_content_soup(self):
         #TODO: zmien na uzycie urllib.parse.urljoin
-        path = self.source + phrase.strip().replace(" ", "_")
+        path = self.source + self.phrase.strip().replace(" ", "_")
         if self.mode == "offline":
             path += ".html"
             try:
@@ -69,8 +70,8 @@ class Scraper:
             return None
         return content
 
-    def get_summary(self, phrase):
-        soup = self.get_content_soup(phrase)
+    def get_summary(self):
+        soup = self.get_content_soup()
         if not soup:
             print("get_html failed")
             return None
@@ -92,7 +93,7 @@ class Scraper:
 
 # zwraca tabele (dataframe)
 # czy ta funckja ma omijac bezsnesowne tabele
-    def get_table(self, phrase, number, is_first_row_header):
+    def get_table(self, number, is_first_row_header):
         #wybastrahowac wyzej te funkcje
 
         # TODO: to samo czyszczenie najpierw co w count words?
@@ -101,7 +102,7 @@ class Scraper:
         else:
             header = None
 
-        soup = self.get_content_soup(phrase)
+        soup = self.get_content_soup()
         if not soup:
             print("get_html failed")
             return None
@@ -189,12 +190,12 @@ class Scraper:
 
 
 
-if __name__ == "__main__":
-    scraper = Scraper(mode='online', source='https://minecraft.wiki/')
+#if __name__ == "__main__":
+ #   scraper = Scraper(mode='online', source='https://minecraft.wiki/')
     #print(scraper.get_table("creeper", 1, False))
     #print("\nyes\n:")
     #print(scraper.get_table("creeper", 1, True))
     #print(scraper.get_table("creeper", 1, False))
     #analyze_relative_word_frequency("language", 5, True, "img/test.png")
-    scraper.get_content_soup("My Wikipedia")
+  #  scraper.get_content_soup("My Wikipedia")
 
