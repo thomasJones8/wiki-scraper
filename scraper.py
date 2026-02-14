@@ -5,11 +5,17 @@ import re
 
 # lang_confidence_score, wykrest
 # gdzeis globalnie ustawic encoding
-#TODO: pamietaj o pep8
+#TODO: pamietaj o pep8 + plik z konfiguracja?
+
 # czy to porblem ze te funckje robie nieobiektowo?
 
+#TODO: explicite napisac/dodac gurardy jak uzywac source i phrase, online i offline
 
 import pandas as pd
+
+from analyzer import DataAnalyzer
+
+
 # more convenient format
 #pd.options.display.float_format = '{:.6f}'.format
 
@@ -41,9 +47,12 @@ class Scraper:
     # type tag (beautifulsoup)
     def get_content_soup(self):
         #TODO: zmien na uzycie urllib.parse.urljoin
+        if not self.source.endswith("/"):
+            self.source += "/"
         path = self.source + self.phrase.strip().replace(" ", "_")
         if self.mode == "offline":
-            path += ".html"
+            if not path.endswith(".html"):
+                path += ".html"
             try:
                 with open(path, "r", encoding="utf-8") as file:
                     html = file.read()
@@ -156,8 +165,9 @@ class Scraper:
         text = re.sub(r"[^a-zA-Z\s]", " ", text)
         return text
 
-
-
+    #TODO: rename? proper_phrase?
+    # checks proper links for auto_count_words
+    # receives links in this format (ex.) - /w/Banner_Pattern
     @staticmethod
     def proper_link(link):
         # outside wiki or inside the specific article link (#...)
@@ -165,7 +175,7 @@ class Scraper:
             return False
         # symbols indicating wrong links:
         #  "." - files
-        if "." in link:
+        if ":" in link:
             return False
         return True
 
@@ -178,6 +188,8 @@ class Scraper:
 
         # get all links from anchors
         links = {str(a["href"]) for a in soup.find_all("a", href=True)}
+        # TODO: usun!
+        print(links)
         # exclude improper links (outside wiki, links to files)
         # using set to visit only once multiply referenced sites
         proper_links = {link for link in links if Scraper.proper_link(link)}
@@ -189,13 +201,17 @@ class Scraper:
         return phrases
 
 
-
-#if __name__ == "__main__":
- #   scraper = Scraper(mode='online', source='https://minecraft.wiki/')
+import analyzer
+if __name__ == "__main__":
+    #scraper = Scraper(mode='online', source='https://minecraft.wiki/w/', phrase="Java_Edition_1.18.1")
     #print(scraper.get_table("creeper", 1, False))
     #print("\nyes\n:")
     #print(scraper.get_table("creeper", 1, True))
     #print(scraper.get_table("creeper", 1, False))
     #analyze_relative_word_frequency("language", 5, True, "img/test.png")
-  #  scraper.get_content_soup("My Wikipedia")
-
+    analyzer = DataAnalyzer()
+    with open(file="analysis/en.txt", encoding="utf-8", mode="r") as file:
+        text = file.read()
+    text = text.lower()
+    text = re.sub(r"[^\w\s]", " ", text)
+    analyzer.update_word_counts(text)

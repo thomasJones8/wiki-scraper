@@ -1,5 +1,6 @@
 # tworzenie scrapera, printy, argparsownaie
 # tutaj if name main
+# manager - scraper.py -
 
 #TODO: obsluzyc bledne wywolania np? np table bez numeru
 import argparse
