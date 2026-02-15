@@ -1,19 +1,14 @@
-# tworzenie scrapera, printy, argparsownaie
-# tutaj if name main
-# manager - scraper.py -
-
 import argparse
 import time
 import pandas as pd
-
 from scraper import Scraper
 from analyzer import DataAnalyzer
 
 
+# main class
 class Manager:
     def __init__(self, mode='online', source='https://minecraft.wiki/w/', lang='en',
                  word_counts_path='word-counts.json'):
-        #TODO: dodac guardy?
         self.analyzer = DataAnalyzer(lang=lang, word_counts_path=word_counts_path)
         self.mode = mode
         self.source = source
@@ -23,8 +18,7 @@ class Manager:
         values_list = table.values.flatten()
         return pd.Series(values_list).value_counts().reset_index()
 
-
-
+    # functions for different commands
     def summary(self, phrase):
         scraper = Scraper(mode=self.mode, source=self.source, phrase=phrase)
         print(scraper.get_summary())
@@ -48,10 +42,12 @@ class Manager:
         print(df)
         return df
 
-
-    # wolac z pustym setem
-    # calling count_words on an article, articles referenced by it etc. depth times using DFS
     def auto_count_words(self, phrase, depth, wait, already_met):
+        """
+            Calling count_words on an article, articles referenced by it etc. depth times
+            using DFS. Use with already met = empty set.
+        """
+
         if phrase in already_met:
             return
         already_met.add(phrase)
@@ -61,26 +57,17 @@ class Manager:
 
         soup = scraper.get_content_soup()
         cleaned_text = scraper.get_and_clean_article_content(soup)
-        # wykonać --count-words dla przetwarzanej frazy,
         analyzer.update_word_counts(cleaned_text)
 
-        # jeżeli do obecnej frazy prowadzi sekwencja mniej niż n linków od początkowej frazy,
-        # wybrać z niego wszystkie linki prowadzące do innych fraz, których jeszcze nie odwiedził,
         if depth > 0:
-            # wyciagnij linki
             phrases = scraper.get_referenced_phrases(soup)
-            # na wszelki poczekaj
             for phrase in phrases:
                 # wait (to bypass wiki security)
-                time.sleep(1)
-                #
+                time.sleep(wait)
                 self.auto_count_words(phrase, depth - 1, wait, already_met)
 
 
-
 def setup_parser():
-    #TODO: uzupelnij helpy
-
     parser = argparse.ArgumentParser("Wiki Scraper parser")
     commands = parser.add_mutually_exclusive_group(required=True)
     commands.add_argument("--summary", type=str)
@@ -92,20 +79,20 @@ def setup_parser():
     # optional arguments
     parser.add_argument("--number", type=int)
     parser.add_argument("--first-row-is-header", action="store_true")
-    parser.add_argument("--mode",type=str, choices=["article", "language"])
-    parser.add_argument("--count",type=int)
+    parser.add_argument("--mode", type=str, choices=["article", "language"])
+    parser.add_argument("--count", type=int)
     parser.add_argument("--chart", type=str)
-    parser.add_argument("--depth",type=int)
-    parser.add_argument("--wait",type=int)
+    parser.add_argument("--depth", type=int)
+    parser.add_argument("--wait", type=int)
 
     return parser
+
 
 if __name__ == "__main__":
     manager = Manager()
     parser = setup_parser()
     args = parser.parse_args()
 
-    # tu parsowanie
     if args.summary:
         manager.summary(args.summary)
     elif args.table:
@@ -113,14 +100,14 @@ if __name__ == "__main__":
             print("No number is specified. Usage: --table \"phrase\" --number n [--first-row-is-header]")
         else:
             manager.table(phrase=args.table, number=args.number,
-                      first_row_is_header=args.first_row_is_header)
+                          first_row_is_header=args.first_row_is_header)
     elif args.count_words:
         manager.count_words(args.count_words)
     elif args.analyze_relative_word_frequency:
         if args.mode is None or args.count is None:
             print(
                 "Usage: --analyze-relative-word-frequency --mode 'mode' --count n"
-            "[--chart 'file_path']")
+                "[--chart 'file_path']")
         else:
             df = manager.analyze_relative_word_frequency(mode=args.mode, count=args.count)
             if args.chart:

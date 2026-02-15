@@ -1,15 +1,10 @@
 import json
 import os
-from collections import Counter
 from pathlib import Path
-
 import pandas as pd
+from collections import Counter
 from matplotlib import pyplot as plt
 from wordfreq import word_frequency, top_n_list
-
-
-# tu nas nie obchodzi html?
-# potestuj jeszcze dzialanie offline
 
 
 class DataAnalyzer:
@@ -17,8 +12,6 @@ class DataAnalyzer:
         self.lang = lang
         self.word_counts_path = word_counts_path
 
-    # biore tylko to co unikalne dla tego artykulu
-    # TODO: PAMIETAJ ZE TO DOSTAJE INPUT NIE Z GET CONTENT TYLKO Z GET CLEANED TEXT
     def update_word_counts(self, cleaned_text):
         current = Counter(cleaned_text.split())
         path = self.word_counts_path
@@ -26,7 +19,7 @@ class DataAnalyzer:
         # counting started already
         if os.path.exists(path):
             with open(path, "r", encoding="utf-8") as file:
-                old = Counter(json.loads(file.read()))
+                old = Counter(json.load(file))
             # update
             new = old + current
         # starting counting
@@ -35,8 +28,6 @@ class DataAnalyzer:
         # save result
         with open(path, "w", encoding="utf-8") as file:
             file.write(json.dumps(new, indent=4))
-
-
 
     def analyze_relative_word_frequency(self, mode, n):
         lang = self.lang
@@ -69,45 +60,36 @@ class DataAnalyzer:
         # for lang normalisation later
         lang_top_frequency = word_frequency(top_n_list(lang, 1)[0], lang)
 
-        # wersja artykul baza - dopasowuje jezyk do wiki
         if mode == "article":
             df = pd.DataFrame(wiki_data.items(), columns=["word", "wiki_freq"])
             df = df.sort_values("wiki_freq", ascending=False).head(n).reset_index(drop=True)
             # instantly normalising
-            lang_data = {word: word_frequency(word, lang)/lang_top_frequency for word in df["word"]}
-            df["lang_freq"] = df["word"].map(lang_data).replace(0.0, None)
+            lang_data = {word: word_frequency(word, lang) / lang_top_frequency for word in df["word"]}
+            df["lang_freq"] = df["word"].map(lang_data).replace(0.0, float('nan'))
 
-        # dopasowuje wiki do jezyka
         elif mode == "language":
             most_common_words = top_n_list(lang, n)
             # counter: n most common word in the language and their probability
             # instantly normalising
             lang_data = {word: word_frequency(word, lang) / lang_top_frequency for word in most_common_words}
             df = pd.DataFrame(lang_data.items(), columns=["word", "lang_freq"])
-            df["wiki_freq"] = df["word"].map(wiki_data).replace(0.0, None)
+            df["wiki_freq"] = df["word"].map(wiki_data).replace(0.0, float('nan'))
             df = df.sort_values("lang_freq", ascending=False).head(n).reset_index(drop=True)
 
         else:
             print("Unknown mode. Use 'article' or 'language'")
             return pd.DataFrame()
 
-        # merge data - i za pomocą pandas stwórz i wypisz tabelę z
-        # kolumnami: word, frequency in the article, frequency in wiki language (słowo, częstotliwość w
-        # artykule, częstotliwość w języku wiki)
-
-        # JAK TO JEST Z TYMI 0 I NAN?
-
         # renaming to comply with requirements
         df = df.rename(columns={
             "wiki_freq": "frequency in the article",
             "lang_freq": "frequency in wiki language"
         })
-        # normalise
 
+        # ensure required order
+        df = df[["word", "frequency in the article", "frequency in wiki language"]]
 
         return df
-    # TODO: co dokladnie mam zrobic z chart?
-
 
     @staticmethod
     def generate_chart(df, path):
@@ -115,7 +97,6 @@ class DataAnalyzer:
         # create folders if they don't exist
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        # TODO: popracuj jeszcze nad estetyka tego wykresu
         chart = df.plot(kind='bar', x="word", figsize=(16, 10), color=['#4c72b0', '#dd8452'],
                         width=0.8, fontsize=16, edgecolor="black")
         chart.set_title(f'Word frequency: wiki vs language', fontsize=24, pad=20)

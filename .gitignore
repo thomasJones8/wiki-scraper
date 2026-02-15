@@ -1,9 +1,10 @@
 .idea/
 .venv/
+venv/
 __pycache__/
+*.pyc
 *.csv
-*.txt
-*.json
 *.xml
-requests
 img/
+.pytest_cache/
+.ipynb_checkpoints/
