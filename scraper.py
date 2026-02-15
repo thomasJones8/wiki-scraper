@@ -6,9 +6,9 @@ import re
 # lang_confidence_score, wykrest
 # gdzeis globalnie ustawic encoding
 #TODO: pamietaj o pep8 + plik z konfiguracja?
-
-# czy to porblem ze te funckje robie nieobiektowo?
-
+# obsluga get table: tworzy directory csv jak nie istenieje i tam zapisuje pliki
+# czy table robi ten wypis co mial?
+# czy obrazki sie odpowiednio ladnie generuja
 #TODO: explicite napisac/dodac gurardy jak uzywac source i phrase, online i offline
 
 import pandas as pd
@@ -17,7 +17,7 @@ from analyzer import DataAnalyzer
 
 
 # more convenient format
-#pd.options.display.float_format = '{:.6f}'.format
+pd.options.display.float_format = '{:.6f}'.format
 
 
 # przyjmowac tez n ?
@@ -98,7 +98,7 @@ class Scraper:
         # the separator above creates spaces before punctuation marks
         # using regex to fix it
         text = re.sub(r"\s+([.,!?;:])", r'\1' ,text)
-        return text
+        return text.replace(" -", "-")
 
 # zwraca tabele (dataframe)
 # czy ta funckja ma omijac bezsnesowne tabele
@@ -122,7 +122,8 @@ class Scraper:
             return None
 
         if number < 1 or len(tables) < number:
-            print("Number out of range [1, number of tables]")
+            print(f"Number out of range [1, {len(tables)}*]")
+            print("*number of tables in the article")
             return None
 
         table = tables[number - 1]
@@ -162,7 +163,10 @@ class Scraper:
 
         # preparing the text for analysis - converting to lowercase, removing numbers and symbols
         text = soup.get_text(separator=" ").lower()
-        text = re.sub(r"[^a-zA-Z\s]", " ", text)
+        # get rid of everything except unicode letters
+        text = re.sub(r"[^\w\s]", " ", text)
+        text = re.sub(r"[\d_]", " ", text)
+
         return text
 
     #TODO: rename? proper_phrase?
@@ -189,29 +193,31 @@ class Scraper:
         # get all links from anchors
         links = {str(a["href"]) for a in soup.find_all("a", href=True)}
         # TODO: usun!
-        print(links)
+
         # exclude improper links (outside wiki, links to files)
         # using set to visit only once multiply referenced sites
         proper_links = {link for link in links if Scraper.proper_link(link)}
+
         # clean:
         # 1. get rid of "/w/" prefix
         # 2. get rid of links to specific part of an article (ex.: https://minecraft.wiki/w/Advancement#A_Throwaway_Joke)
         phrases = {link.split("/")[2].split("#")[0] for link in proper_links}
-
         return phrases
 
 
 import analyzer
 if __name__ == "__main__":
-    #scraper = Scraper(mode='online', source='https://minecraft.wiki/w/', phrase="Java_Edition_1.18.1")
+    scraper = Scraper(mode='online', source='https://minecraft.wiki/w/', phrase="debug_screen")
     #print(scraper.get_table("creeper", 1, False))
     #print("\nyes\n:")
     #print(scraper.get_table("creeper", 1, True))
     #print(scraper.get_table("creeper", 1, False))
     #analyze_relative_word_frequency("language", 5, True, "img/test.png")
     analyzer = DataAnalyzer()
-    with open(file="analysis/en.txt", encoding="utf-8", mode="r") as file:
-        text = file.read()
-    text = text.lower()
-    text = re.sub(r"[^\w\s]", " ", text)
-    analyzer.update_word_counts(text)
+    # with open(file="analysis/en.txt", encoding="utf-8", mode="r") as file:
+    #     text = file.read()
+    # text = text.lower()
+    # text = re.sub(r"[^\w\s]", " ", text)
+    text= scraper.get_and_clean_article_content(scraper.get_content_soup())
+    print(len(text.split()))
+    #analyzer.update_word_counts()

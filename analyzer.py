@@ -9,6 +9,7 @@ from wordfreq import word_frequency, top_n_list
 
 
 # tu nas nie obchodzi html?
+# potestuj jeszcze dzialanie offline
 
 
 class DataAnalyzer:
@@ -42,14 +43,14 @@ class DataAnalyzer:
         word_counts = self.word_counts_path
         # get wiki data
         try:
-            with open(word_counts, "r") as file:
-                wiki_data = Counter(json.load(file))
+            with open(word_counts, "r", encoding="utf-8") as file:
+                wiki_data = json.load(file)
         except FileNotFoundError:
             print(f"File not found: {word_counts}")
-            wiki_data = Counter()
+            wiki_data = {}
         except json.decoder.JSONDecodeError:
             print(f"JSON decode error: {word_counts}")
-            wiki_data = Counter()
+            wiki_data = {}
 
         if not wiki_data:
             print(f"{word_counts} is empty - no data to analyze")
@@ -64,26 +65,30 @@ class DataAnalyzer:
 
         # normalise
         max_occurences = max(wiki_data.values())
-        wiki_data = Counter({k: v / max_occurences for k, v in wiki_data.items()})
+        wiki_data = {k: v / max_occurences for k, v in wiki_data.items()}
+        # for lang normalisation later
+        lang_top_frequency = word_frequency(top_n_list(lang, 1)[0], lang)
 
-        # wersja artykul baza
+        # wersja artykul baza - dopasowuje jezyk do wiki
         if mode == "article":
             df = pd.DataFrame(wiki_data.items(), columns=["word", "wiki_freq"])
-            lang_data = Counter({word: word_frequency(word, lang) for word in wiki_data.keys()})
-            df["lang_freq"] = df["word"].map(lang_data)
             df = df.sort_values("wiki_freq", ascending=False).head(n).reset_index(drop=True)
+            # instantly normalising
+            lang_data = {word: word_frequency(word, lang)/lang_top_frequency for word in df["word"]}
+            df["lang_freq"] = df["word"].map(lang_data).replace(0.0, None)
 
+        # dopasowuje wiki do jezyka
         elif mode == "language":
-            most_common_word = top_n_list(lang, n)
+            most_common_words = top_n_list(lang, n)
             # counter: n most common word in the language and their probability
-            lang_data = Counter({word: word_frequency(word, lang) for word in most_common_word})
+            # instantly normalising
+            lang_data = {word: word_frequency(word, lang) / lang_top_frequency for word in most_common_words}
             df = pd.DataFrame(lang_data.items(), columns=["word", "lang_freq"])
-            wiki_data = Counter({word: wiki_data[word] for word in lang_data.keys()})
-            df["wiki_freq"] = df["word"].map(wiki_data)
+            df["wiki_freq"] = df["word"].map(wiki_data).replace(0.0, None)
             df = df.sort_values("lang_freq", ascending=False).head(n).reset_index(drop=True)
 
         else:
-            print("Unknown mode. Use article or language")
+            print("Unknown mode. Use 'article' or 'language'")
             return pd.DataFrame()
 
         # merge data - i za pomocą pandas stwórz i wypisz tabelę z
@@ -111,10 +116,15 @@ class DataAnalyzer:
         path.parent.mkdir(parents=True, exist_ok=True)
 
         # TODO: popracuj jeszcze nad estetyka tego wykresu
-        chart = df.plot(kind='bar', x="word", figsize=(16, 12), color=['#4c72b0', '#dd8452'],
-                        width=1.2, fontsize=21)
-        chart.set_title(f'Word frequency: wiki vs language', fontsize=22)
-
+        chart = df.plot(kind='bar', x="word", figsize=(16, 10), color=['#4c72b0', '#dd8452'],
+                        width=0.8, fontsize=16, edgecolor="black")
+        chart.set_title(f'Word frequency: wiki vs language', fontsize=24, pad=20)
+        chart.set_ylabel('Frequency (normalised)', fontsize=18)
+        chart.set_xlabel('Word', fontsize=18)
+        chart.legend(fontsize=16)
+        plt.xticks(rotation=45, ha='right')
+        chart.grid(axis='y', linestyle='--', alpha=0.7)
+        chart.set_axisbelow(True)
         plt.tight_layout()
 
         try:
