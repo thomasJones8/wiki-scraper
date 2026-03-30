@@ -1,2 +1,5 @@
 offline_wiki/** linguist-detectable=false
+
 *.html linguist-detectable=false
+
+*.ipynb linguist-detectable=false
