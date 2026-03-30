@@ -7,7 +7,7 @@ Built with a modular, object-oriented architecture, the tool handles HTML parsin
 *Note: This tool was designed specifically for and tested on [https://minecraft.wiki/](https://minecraft.wiki/). While it interacts with the MediaWiki engine, it may require structural adjustments to work correctly on other wiki domains due to differences in custom HTML templates.*
 
 ### 🎓 Academic Context & Achievements
-This project was developed as a final assignment for the **Python Course (3rd semester)** at the MIMUW faculty. 
+This project was developed as a final assignment for the Python Course (3rd semester, Computer Science) at the MIMUW faculty.
 
 The project received the **maximum possible grade** for both the implementation and the technical defense. The defense involved proving a deep, comprehensive understanding of the codebase, explaining the underlying algorithms, and successfully implementing live modifications to the code in front of the professor. For detailed academic requirements (in Polish), see [SPECIFICATION_PL.md](SPECIFICATION_PL.md).
 
